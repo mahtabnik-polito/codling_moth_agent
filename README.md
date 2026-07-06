@@ -1,80 +1,69 @@
-# Codling Moth Degree-Day Dashboard + Advisory Agent
+# Climate & Codling Moth Advisory Dashboard
 
-## What changed
+An interactive, responsive web-based monitoring dashboard connected to a PostgreSQL database. It visualizes local temperature, humidity, and Heating Degree Days (HDD) across multiple monitoring stations and uses a built-in biological rule engine (the **Moth Advisory Agent**) to estimate the current life cycle generations of the codling moth.
 
-- **Security fix**: DB credentials and host were hardcoded in `app.py`.
-  They now come from environment variables (`DB_HOST`, `DB_PORT`, `DB_NAME`,
-  `DB_USER`, `DB_PASSWORD`) — see `.env.example`. Rotate the old password,
-  since it was committed to disk in plaintext.
-- **Extracted shared logic**: all the degree-day / generation-stage logic
-  that used to live inline in the `/api/moth_agent/<view_name>` Flask route
-  now lives in `moth_advisory_agent/tools.py`, as a standalone function
-  `get_codling_moth_status(view_name, end_date)`.
-- **New: `moth_advisory_agent/agent.py`** — a Google ADK `Agent` that wraps
-  `get_codling_moth_status` as a tool. This is what makes it an
-  independent Google Cloud Agent: it can run locally via `adk run`, or be
-  deployed to Vertex AI Agent Engine as a managed, autoscaling service with
-  its own API endpoint.
-- **`deploy_agent.py`** — deploys the agent to Agent Engine.
-- **`app.py`**'s existing `/api/moth_agent/<view_name>` route is unchanged
-  from the frontend's point of view — it just calls the shared function
-  directly (fast, no LLM cost, same JSON shape as before).
-- **New: `/api/moth_agent_chat/<view_name>`** (POST) — an optional
-  conversational endpoint that forwards free-text questions to the
-  *deployed* agent, so it can reason (e.g. "should I still be spraying
-  given the forecast?") instead of just returning the fixed report.
+## Features
 
-## Structure
+- **Dynamic Weather Visualizations**: Double Y-axes line charts showing temperature (°C) and humidity (%) trends, bar charts showing daily HDD aggregates, and area charts showing Cumulative Degree Days.
+- **AI Moth Advisory Agent**: Automatically tracks Cumulative Degree Days and maps the population to developmental stages (Pre-Flight, G1, G2, G3 Partial, and Post-Season/Diapause) with biological assessments and recommended action guides.
+- **Development Timeline**: Renders a vertical stage transition log detailing the calendar dates and cumulative degree days when each generational boundary was crossed.
+- **Flexible Filters**: Date range selector, presets (Last 30 Days, Last 90 Days, All Time), station selectors, and hourly vs. daily granularity toggles.
+- **Bulk CSV Data Exporter**: Includes a standalone script (`export_sensor_data.py`) to run database queries and export raw sensor data directly to CSV.
+
+## Project Structure
 
 ```
-app.py                          Flask web app (dashboard + APIs)
-moth_advisory_agent/
-  tools.py                      DB access + degree-day/stage logic (shared)
-  agent.py                      ADK Agent definition (root_agent)
-  requirements.txt
-deploy_agent.py                 Deploys agent.py to Vertex AI Agent Engine
-.env.example                    Template for required env vars
+postgres_exporter/
+│
+├── templates/
+│   └── index.html             # Frontend dashboard dashboard template
+│
+├── .gitignore                 # Excludes venv, pycache, and CSV exports
+├── app.py                     # Flask web server & lifecycle rule engine
+├── export_sensor_data.py      # Standalone script to export data to CSV
+├── README.md                  # Project documentation
+└── requirements.txt           # Python packages
 ```
 
-## Running locally
+## Setup & Installation
+
+### 1. Prerequisites
+- Python 3.12+ installed.
+- Access to the target PostgreSQL server (credentials are pre-configured in `app.py`).
+
+### 2. Installation
+Navigate to the project root directory and create a virtual environment:
 
 ```bash
-cp .env.example .env   # fill in real DB credentials
-pip install -r requirements.txt -r moth_advisory_agent/requirements.txt --break-system-packages
-export $(grep -v '^#' .env | xargs)   # or use python-dotenv / your process manager
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment (Windows PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# Activate virtual environment (macOS/Linux)
+source venv/bin/activate
+
+# Install dependencies
+python -m pip install -r requirements.txt
+```
+
+## Running the Application
+
+### 1. Start the Web Server
+Launch the Flask development server:
+
+```bash
 python app.py
 ```
 
-## Testing the agent locally (before deploying)
+By default, the server will start at:
+👉 **[http://127.0.0.1:5000/](http://127.0.0.1:5000/)**
+
+### 2. Standalone CSV Exporter
+To run the raw database export script and fetch sensor data starting from `2026-01-01` into a local CSV file, execute:
 
 ```bash
-export $(grep -v '^#' .env | xargs)
-adk run moth_advisory_agent
+python export_sensor_data.py
 ```
-
-This opens an interactive prompt where you can ask things like
-"What's the codling moth status at San Rocco?" and watch it call the tool.
-
-## Deploying to Vertex AI Agent Engine
-
-```bash
-gcloud auth application-default login
-export $(grep -v '^#' .env | xargs)
-python deploy_agent.py
-```
-
-Copy the printed resource name into `.env` as `AGENT_ENGINE_RESOURCE_NAME`
-so `app.py`'s `/api/moth_agent_chat` route can reach it.
-
-## Notes / things worth deciding next
-
-- `debug=True` was removed from the default `app.run(...)` (it's a code-
-  execution risk in production). Set `FLASK_DEBUG=true` locally if you want
-  it back.
-- The DB credentials get passed to the deployed agent via `env_vars` in
-  `deploy_agent.py`. For anything beyond a prototype, move these to
-  Secret Manager instead and reference the secret in the deployment config.
-- The agent currently connects directly to your Postgres instance's
-  private IP (`10.7.18.68`). Agent Engine runs in Google's infrastructure,
-  not your network — you'll likely need a VPC connector / Cloud SQL Auth
-  Proxy / allowlisted IP so the deployed agent can actually reach the DB.
+This will save a file named `sensor_data_2026.csv` in the directory above the project folder.
