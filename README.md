@@ -13,15 +13,17 @@ An interactive, responsive web-based monitoring dashboard connected to a Postgre
 ## Project Structure
 
 ```
-postgres_exporter/
+codling_moth_agent/
 │
 ├── templates/
 │   └── index.html             # Frontend dashboard dashboard template
 │
-├── .gitignore                 # Excludes venv, pycache, and CSV exports
 ├── app.py                     # Flask web server & lifecycle rule engine
-├── export_sensor_data.py      # Standalone script to export data to CSV
-├── README.md                  # Project documentation
+├── deploy_agent.py            # Standalone file to deploy the Agent
+├── moth_advisory_agent
+│   └── agent.py               # Frontend dashboard dashboard template
+│   └── requirements.txt       # Python packages
+│   └── tools.py               # Tools
 └── requirements.txt           # Python packages
 ```
 
@@ -59,11 +61,3 @@ python app.py
 
 By default, the server will start at:
 👉 **[http://127.0.0.1:5000/](http://127.0.0.1:5000/)**
-
-### 2. Standalone CSV Exporter
-To run the raw database export script and fetch sensor data starting from `2026-01-01` into a local CSV file, execute:
-
-```bash
-python export_sensor_data.py
-```
-This will save a file named `sensor_data_2026.csv` in the directory above the project folder.
