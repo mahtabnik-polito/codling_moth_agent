@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate & Codling Moth Advisory Dashboard</title>
+    
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-primary: #8b5cf6; /* Violet */
+            --accent-secondary: #06b6d4; /* Cyan */
+            --accent-tertiary: #f43f5e; /* Rose */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --card-glow: rgba(139, 92, 246, 0.15);
+            --font-family: 'Outfit', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 118, 212, 0.08) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-icon {
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.4));
+        }
+
+        .brand-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-title p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Controls Panel */
+        .controls-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            align-items: flex-end;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-select, .control-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all var(--transition-speed);
+            cursor: pointer;
+        }
+
+        .control-select:focus, .control-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
+        }
+
+        .toggle-container {
+            display: inline-flex;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 3px;
+        }
+
+        .toggle-option {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            user-select: none;
+            color: var(--text-muted);
+        }
+
+        .toggle-option.active {
+            background: var(--accent-primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px var(--card-glow);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .kpi-details h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #ffffff, #e2e8f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .kpi-icon {
+            font-size: 2.2rem;
+            opacity: 0.85;
+            transition: transform var(--transition-speed);
+        }
+
+        .kpi-card:hover .kpi-icon {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .kpi-card.temp .kpi-icon { color: #f59e0b; }
+        .kpi-card.humidity .kpi-icon { color: var(--accent-secondary); }
+        .kpi-card.hdd .kpi-icon { color: var(--accent-tertiary); }
+        .kpi-card.cdd .kpi-icon { color: var(--accent-primary); }
+
+        /* Grid Layout: Left Chart, Right AI Panel */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2.2fr 1fr;
+            gap: 2rem;
+        }
+
+        .chart-section {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 15px 35px -15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0; /* Prevents chart blowing out layout */
+        }
+
+        /* AI Agent Panel */
+        .agent-section {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 15px 35px -15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: relative;
+        }
+
+        .agent-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .agent-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+            position: relative;
+        }
+
+        .agent-avatar::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            border: 2px solid var(--bg-color);
+            right: 0;
+            bottom: 0;
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .agent-status-box {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* Generation Badges */
+        .badge {
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-block;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        .badge-preflight {
+            background: rgba(148, 163, 184, 0.15);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+        .badge-g1 {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+        .badge-g2 {
+            background: rgba(234, 179, 8, 0.15);
+            color: #facc15;
+            border: 1px solid rgba(234, 179, 8, 0.4);
+        }
+        .badge-g3 {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(249, 115, 22, 0.4);
+        }
+        .badge-postseason {
+            background: rgba(244, 63, 94, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+        }
+        .badge-unknown {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .chat-bubble {
+            background: rgba(139, 92, 246, 0.08);
+            border-left: 3px solid var(--accent-primary);
+            padding: 1rem;
+            border-radius: 0 12px 12px 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+        }
+
+        .chat-bubble strong {
+            color: white;
+        }
+
+        /* Timeline styles */
+        .timeline-section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1rem;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -21px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            border: 2px solid var(--bg-color);
+            z-index: 1;
+        }
+
+        .timeline-item.active::before {
+            background: var(--accent-primary);
+            box-shadow: 0 0 8px var(--accent-primary);
+        }
+
+        .timeline-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .timeline-label {
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .timeline-val {
+            text-align: right;
+            font-size: 0.8rem;
+        }
+
+        .timeline-date {
+            color: var(--text-muted);
+        }
+
+        .timeline-dd {
+            color: var(--accent-secondary);
+            font-weight: 500;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .chart-tabs {
+            display: flex;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .chart-tab {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all var(--transition-speed);
+        }
+
+        .chart-tab.active {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .chart-tab:hover:not(.active) {
+            color: var(--text-main);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            z-index: 10;
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed);
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(139, 92, 246, 0.1);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quick-presets {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .preset-btn:hover, .preset-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .error-toast {
+            background: rgba(244, 63, 94, 0.2);
+            border: 1px solid var(--accent-tertiary);
+            color: #fda4af;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 1rem;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .controls-card {
+                grid-template-columns: 1fr;
+            }
+            .chart-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .chart-tabs {
+                width: 100%;
+            }
+            .chart-tab {
+                flex: 1;
+                text-align: center;
+            }
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <div class="brand-section">
+                <i class="fa-solid fa-bug brand-icon"></i>
+                <div class="brand-title">
+                    <h1>Climate & Codling Moth Advisor</h1>
+                    <p>AI Agent-assisted crop advisory connected to PostgreSQL</p>
+                </div>
+            </div>
+            <div class="quick-presets">
+                <button class="preset-btn" onclick="setPreset('last30')">Last 30 Days</button>
+                <button class="preset-btn" onclick="setPreset('last90')">Last 90 Days</button>
+                <button class="preset-btn active" onclick="setPreset('allTime')">All Time</button>
+            </div>
+        </header>
+
+        <!-- Error Alert -->
+        <div id="errorToast" class="error-toast">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="errorMessage">An error occurred while loading data from the database.</span>
+        </div>
+
+        <!-- Controls Card -->
+        <div class="controls-card">
+            <div class="control-group">
+                <label for="viewSelect">Monitoring Station (View)</label>
+                <select id="viewSelect" class="control-select">
+                    <option value="" disabled selected>Loading stations...</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="startDate">From Date</label>
+                <input type="date" id="startDate" class="control-input" value="2025-05-16">
+            </div>
+
+            <div class="control-group">
+                <label for="endDate">To Date</label>
+                <input type="date" id="endDate" class="control-input" value="2026-07-06">
+            </div>
+
+            <div class="control-group">
+                <label>Data Granularity</label>
+                <div class="toggle-container">
+                    <div id="toggleDaily" class="toggle-option active" onclick="setAggregation('daily')">Daily</div>
+                    <div id="toggleHourly" class="toggle-option" onclick="setAggregation('hourly')">Hourly</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card temp">
+                <div class="kpi-details">
+                    <h3>Avg Temperature</h3>
+                    <div id="kpiTemp" class="kpi-value">-.- °C</div>
+                </div>
+                <i class="fa-solid fa-temperature-three-quarters kpi-icon"></i>
+            </div>
+            <div class="kpi-card humidity">
+                <div class="kpi-details">
+                    <h3>Avg Humidity</h3>
+                    <div id="kpiHumidity" class="kpi-value">-.- %</div>
+                </div>
+                <i class="fa-solid fa-droplet kpi-icon"></i>
+            </div>
+            <div class="kpi-card hdd">
+                <div class="kpi-details">
+                    <h3>Total HDD</h3>
+                    <div id="kpiHdd" class="kpi-value">-.-</div>
+                </div>
+                <i class="fa-solid fa-fire kpi-icon"></i>
+            </div>
+            <div class="kpi-card cdd">
+                <div class="kpi-details">
+                    <h3>Cumulative HDD</h3>
+                    <div id="kpiCdd" class="kpi-value">-.-</div>
+                </div>
+                <i class="fa-solid fa-arrow-trend-up kpi-icon"></i>
+            </div>
+        </div>
+
+        <!-- Main Content Layout -->
+        <div class="dashboard-grid">
+            
+            <!-- Left Column: Visualizations -->
+            <div class="chart-section" style="position: relative;">
+                <div id="loadingOverlay" class="loading-overlay">
+                    <div class="spinner"></div>
+                    <p style="color: var(--text-muted);">Fetching from PostgreSQL...</p>
+                </div>
+
+                <div class="chart-header">
+                    <h2 style="font-size: 1.3rem; font-weight: 600;" id="chartTitle">Historical Visualizations</h2>
+                    <div class="chart-tabs">
+                        <div class="chart-tab active" onclick="switchTab('tempHum')">Temp & Humidity</div>
+                        <div class="chart-tab" onclick="switchTab('hdd')">HDD Values</div>
+                        <div class="chart-tab" onclick="switchTab('cdd')">Cumulative HDD</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="dashboardChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Column: AI Agent Moth Advisory -->
+            <div class="agent-section" id="agentSection">
+                <div class="agent-header">
+                    <div class="agent-avatar">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.1rem; font-weight: 700; letter-spacing: -0.2px;">Moth Advisory Agent</h2>
+                        <span style="font-size: 0.75rem; color: #22c55e; font-weight: 600;"><i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 3px;"></i> Online Analysis</span>
+                    </div>
+                </div>
+
+                <div class="agent-status-box">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Current Development Stage</span>
+                    <div>
+                        <span id="agentStageBadge" class="badge badge-unknown">Analyzing...</span>
+                    </div>
+                    <div id="agentStageDesc" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+                        Evaluating temperature patterns...
+                    </div>
+                </div>
+
+                <div class="chat-bubble" id="agentSpeechBubble">
+                    Analyzing historical cumulative degree days to formulate biological advisory...
+                </div>
+
+                <div>
+                    <h3 class="timeline-section-title">Stage Transition History</h3>
+                    <div class="timeline" id="agentTimeline">
+                        <!-- Filled by JS -->
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">No transitions calculated yet.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // App State
+        let views = [];
+        let currentView = '';
+        let currentAggregation = 'daily';
+        let currentTab = 'tempHum';
+        let dashboardChartInstance = null;
+
+        // Data cache
+        let climateData = [];
+        let cumulativeData = [];
+        let periodSummary = {};
+
+        // DOM elements
+        const viewSelect = document.getElementById('viewSelect');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const errorToast = document.getElementById('errorToast');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Initialize application
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchViews();
+            
+            // Set event listeners for filters
+            viewSelect.addEventListener('change', (e) => {
+                currentView = e.target.value;
+                loadDashboardData();
+            });
+
+            startDateInput.addEventListener('change', () => {
+                clearPresetsActiveState();
+                loadDashboardData();
+            });
+
+            endDateInput.addEventListener('change', () => {
+                clearPresetsActiveState();
+                loadDashboardData();
+            });
+
+            // Set initial state and load
+            if (views.length > 0) {
+                currentView = views[0].id;
+                viewSelect.value = currentView;
+                loadDashboardData();
+            }
+        });
+
+        function clearPresetsActiveState() {
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+        }
+
+        async function fetchViews() {
+            try {
+                const response = await fetch('/api/views');
+                if (!response.ok) throw new Error("Failed to fetch stations list");
+                views = await response.json();
+                
+                viewSelect.innerHTML = '';
+                views.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    opt.textContent = v.name;
+                    viewSelect.appendChild(opt);
+                });
+            } catch (err) {
+                showError("Error loading view configurations: " + err.message);
+            }
+        }
+
+        function setPreset(preset) {
+            clearPresetsActiveState();
+            const btn = event.currentTarget;
+            btn.classList.add('active');
+
+            const maxDate = new Date('2026-07-06');
+            let minDate = new Date('2025-05-16');
+
+            if (preset === 'last30') {
+                minDate = new Date('2026-07-06');
+                minDate.setDate(minDate.getDate() - 30);
+            } else if (preset === 'last90') {
+                minDate = new Date('2026-07-06');
+                minDate.setDate(minDate.getDate() - 90);
+            }
+
+            startDateInput.value = minDate.toISOString().split('T')[0];
+            endDateInput.value = maxDate.toISOString().split('T')[0];
+            loadDashboardData();
+        }
+
+        function setAggregation(agg) {
+            if (currentAggregation === agg) return;
+            currentAggregation = agg;
+
+            document.getElementById('toggleDaily').classList.toggle('active', agg === 'daily');
+            document.getElementById('toggleHourly').classList.toggle('active', agg === 'hourly');
+
+            loadDashboardData();
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorToast.style.display = 'flex';
+            setTimeout(() => {
+                errorToast.style.display = 'none';
+            }, 6000);
+        }
+
+        async function loadDashboardData() {
+            if (!currentView) return;
+            
+            loadingOverlay.classList.add('active');
+            errorToast.style.display = 'none';
+
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+
+            try {
+                // 1. Fetch basic climate variables
+                const climateRes = await fetch(`/api/data/${currentView}?start_date=${start}&end_date=${end}&aggregate=${currentAggregation}`);
+                if (!climateRes.ok) throw new Error("Could not fetch climate data");
+                const climateResult = await climateRes.json();
+                climateData = climateResult.data;
+                periodSummary = climateResult.summary || {};
+
+                // 2. Fetch Cumulative HDD calculations
+                const cumulativeRes = await fetch(`/api/cumulative/${currentView}?start_date=${start}&end_date=${end}`);
+                if (!cumulativeRes.ok) throw new Error("Could not fetch cumulative calculation");
+                cumulativeData = await cumulativeRes.json();
+
+                // 3. Fetch AI Moth Advisory Report
+                const mothRes = await fetch(`/api/moth_agent/${currentView}?start_date=${start}&end_date=${end}`);
+                if (!mothRes.ok) throw new Error("Could not fetch AI Moth Advisory data");
+                const mothResult = await mothRes.json();
+
+                // Update KPIs
+                updateKPIs();
+
+                // Update AI Agent Advisory
+                updateMothAdvisory(mothResult);
+
+                // Render Chart
+                renderChart();
+
+            } catch (err) {
+                showError("Database connection failed or query error: " + err.message);
+                console.error(err);
+            } finally {
+                loadingOverlay.classList.remove('active');
+            }
+        }
+
+        function updateKPIs() {
+            document.getElementById('kpiTemp').textContent = periodSummary.avg_temp !== null && periodSummary.avg_temp !== undefined 
+                ? `${periodSummary.avg_temp} °C` 
+                : '-.- °C';
+                
+            document.getElementById('kpiHumidity').textContent = periodSummary.avg_humidity !== null && periodSummary.avg_humidity !== undefined 
+                ? `${periodSummary.avg_humidity} %` 
+                : '-.- %';
+                
+            document.getElementById('kpiHdd').textContent = periodSummary.total_hdd !== null && periodSummary.total_hdd !== undefined 
+                ? Math.round(periodSummary.total_hdd).toLocaleString() 
+                : '-.-';
+
+            const lastCumulative = cumulativeData.length > 0 
+                ? cumulativeData[cumulativeData.length - 1].cumulative_degree_days 
+                : 0;
+            document.getElementById('kpiCdd').textContent = lastCumulative !== null 
+                ? Math.round(lastCumulative).toLocaleString() 
+                : '-.-';
+        }
+
+        // Format raw report markdown text simply into HTML
+        function formatReportText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n\n/g, '<br><br>');
+        }
+
+        // Populate Moth Advisory UI fields
+        function updateMothAdvisory(agentData) {
+            const badge = document.getElementById('agentStageBadge');
+            badge.className = 'badge'; // clear previous badge classes
+            
+            // Map stage ids to badge classes
+            const stageClasses = {
+                'pre-flight': 'badge-preflight',
+                'G1': 'badge-g1',
+                'G2': 'badge-g2',
+                'G3_partial': 'badge-g3',
+                'post-season': 'badge-postseason',
+                'unknown': 'badge-unknown'
+            };
+            
+            const badgeClass = stageClasses[agentData.current_stage] || 'badge-unknown';
+            badge.classList.add(badgeClass);
+            badge.textContent = agentData.current_stage_title;
+
+            // Details and advice
+            document.getElementById('agentStageDesc').textContent = agentData.details.desc;
+            document.getElementById('agentSpeechBubble').innerHTML = formatReportText(agentData.report);
+
+            // Populate Timeline
+            const timelineContainer = document.getElementById('agentTimeline');
+            timelineContainer.innerHTML = '';
+
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+
+            if (!agentData.transitions || agentData.transitions.length === 0) {
+                timelineContainer.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-muted);">No developmental stages recorded in this period.</div>';
+                return;
+            }
+
+            agentData.transitions.forEach((t, i) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                
+                // Highlight item if it's the current active stage
+                if (t.stage === agentData.current_stage) {
+                    item.classList.add('active');
+                }
+
+                // Format stage display names
+                const stageNames = {
+                    'pre-flight': 'Pre-Flight Stage',
+                    'G1': 'First Generation (G1)',
+                    'G2': 'Second Generation (G2)',
+                    'G3_partial': 'Third Gen Partial (G3)',
+                    'post-season': 'Post-Season / Diapause'
+                };
+                const displayStageName = stageNames[t.stage] || t.stage;
+
+                // Determine if transition fits inside the selected filter date window
+                const isWithinSelectedRange = (t.date >= start && t.date <= end);
+                const dateDisplayStr = isWithinSelectedRange 
+                    ? new Date(t.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                    : `Before range (${new Date(t.date).toLocaleDateString([], { month: 'short', year: 'numeric' })})`;
+
+                item.innerHTML = `
+                    <div class="timeline-content">
+                        <div>
+                            <div class="timeline-label">${displayStageName}</div>
+                            <div class="timeline-date">${dateDisplayStr}</div>
+                        </div>
+                        <div class="timeline-val">
+                            <span class="timeline-dd">${t.dd} DD</span>
+                        </div>
+                    </div>
+                `;
+                timelineContainer.appendChild(item);
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.chart-tab').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            renderChart();
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('dashboardChart').getContext('2d');
+            
+            if (dashboardChartInstance) {
+                dashboardChartInstance.destroy();
+            }
+
+            const chartConfig = getChartConfiguration(currentTab);
+            dashboardChartInstance = new Chart(ctx, chartConfig);
+        }
+
+        function getChartConfiguration(tab) {
+            const labels = climateData.map(d => {
+                const date = new Date(d.time);
+                if (currentAggregation === 'hourly') {
+                    return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                }
+                return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+            });
+
+            if (tab === 'tempHum') {
+                const temps = climateData.map(d => currentAggregation === 'hourly' ? d.hour_temp : d.avg_temp);
+                const humidities = climateData.map(d => currentAggregation === 'hourly' ? d.hour_humidity : d.avg_humidity);
+
+                return {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Temperature (°C)',
+                                data: temps,
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                borderWidth: 2.5,
+                                pointRadius: temps.length > 100 ? 0 : 3,
+                                pointHoverRadius: 6,
+                                tension: 0.25,
+                                yAxisID: 'yTemp'
+                            },
+                            {
+                                label: 'Humidity (%)',
+                                data: humidities,
+                                borderColor: '#06b6d4',
+                                backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                pointRadius: humidities.length > 100 ? 0 : 2,
+                                pointHoverRadius: 5,
+                                tension: 0.25,
+                                yAxisID: 'yHumidity'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: '#94a3b8', font: { family: 'Outfit', size: 12 } }
+                            },
+                            tooltip: {
+                                padding: 12,
+                                bodyFont: { family: 'Outfit' },
+                                titleFont: { family: 'Outfit', weight: 'bold' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                                ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                            },
+                            yTemp: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: { display: true, text: 'Temperature (°C)', color: '#f59e0b', font: { family: 'Outfit', weight: 'bold' } },
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                            },
+                            yHumidity: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: { display: true, text: 'Humidity (%)', color: '#06b6d4', font: { family: 'Outfit', weight: 'bold' } },
+                                grid: { drawOnChartArea: false },
+                                ticks: { color: '#94a3b8', font: { family: 'Outfit' } },
+                                min: 0,
+                                max: 100
+                            }
+                        }
+                    }
+                };
+
+            } else if (tab === 'hdd') {
+                const hddValues = climateData.map(d => currentAggregation === 'hourly' ? d.hour_hdd : d.sum_hdd);
+                
+                return {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Heating Degree Days (HDD)',
+                                data: hddValues,
+                                backgroundColor: 'rgba(244, 63, 94, 0.65)',
+                                borderColor: '#f43f5e',
+                                borderWidth: 1,
+                                hoverBackgroundColor: '#f43f5e',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#94a3b8', font: { family: 'Outfit' } }
+                            },
+                            tooltip: { padding: 12, bodyFont: { family: 'Outfit' }, titleFont: { family: 'Outfit' } }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                                ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#94a3b8', font: { family: 'Outfit' } },
+                                title: { display: true, text: 'HDD Value', color: '#f43f5e', font: { family: 'Outfit', weight: 'bold' } }
+                            }
+                        }
+                    }
+                };
+
+            } else if (tab === 'cdd') {
+                const cumLabels = cumulativeData.map(d => {
+                    const date = new Date(d.time);
+                    return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                });
+                const cddValues = cumulativeData.map(d => d.cumulative_degree_days);
+
+                return {
+                    type: 'line',
+                    data: {
+                        labels: cumLabels,
+                        datasets: [
+                            {
+                                label: 'Cumulative HDD',
+                                data: cddValues,
+                                borderColor: '#8b5cf6',
+                                backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                                fill: true,
+                                borderWidth: 3,
+                                pointRadius: cddValues.length > 100 ? 0 : 3,
+                                pointHoverRadius: 6,
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: '#94a3b8', font: { family: 'Outfit' } }
+                            },
+                            tooltip: { padding: 12, bodyFont: { family: 'Outfit' }, titleFont: { family: 'Outfit' } }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                                ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#94a3b8', font: { family: 'Outfit' } },
+                                title: { display: true, text: 'Cumulative HDD', color: '#8b5cf6', font: { family: 'Outfit', weight: 'bold' } }
+                            }
+                        }
+                    }
+                };
+            }
+        }
+    </script>
+</body>
+</html>
